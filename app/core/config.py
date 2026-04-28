@@ -10,6 +10,8 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str = "change-me-in-production"
 
+    MODEL_DIR: str = "models"
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
