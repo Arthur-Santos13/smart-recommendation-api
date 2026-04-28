@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
+from app.ml.model_registry import get_registry
 from app.ml.similarity import SimilarityMatrix
 from app.models.item import Item
 from app.repositories.recommendation_repository import RecommendationRepository
@@ -57,12 +58,18 @@ class ContentBasedService:
         top_n: int = 10,
         category: str | None = None,
     ) -> list[RecommendationResult]:
+        registry = get_registry()
+
         all_items = self.repo.get_all_active_items()
         if not all_items:
             return []
 
-        similarity_matrix = SimilarityMatrix(all_items)
         items_by_id: dict[uuid.UUID, Item] = {item.id: item for item in all_items}
+
+        if registry.content is not None:
+            similarity_matrix = registry.content.similarity_matrix
+        else:
+            similarity_matrix = SimilarityMatrix(all_items)
 
         user_events = self.repo.get_user_events(user_id)
         if not user_events:
