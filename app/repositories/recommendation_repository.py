@@ -8,6 +8,7 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.models.item import Item
+from app.models.user import User
 from app.models.user_event import UserEvent
 
 
@@ -17,6 +18,13 @@ class RecommendationRepository:
 
     def get_all_active_items(self) -> list[Item]:
         return self.db.query(Item).filter(Item.is_active.is_(True)).all()
+
+    def get_all_active_users(self) -> list[User]:
+        return self.db.query(User).filter(User.is_active.is_(True)).all()
+
+    def get_all_events(self) -> list[UserEvent]:
+        """Return all events — used to build the global interaction matrix."""
+        return self.db.query(UserEvent).all()
 
     def get_user_events(self, user_id: uuid.UUID) -> list[UserEvent]:
         """Return all events for a user ordered by recency."""
