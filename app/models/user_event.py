@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import Enum as PyEnum
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -36,6 +36,7 @@ class UserEvent(Base):
         index=True,
     )
     event_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    weight: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
