@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.ml.collaborative_filter import KNNCollaborativeFilter
 from app.ml.interaction_matrix import InteractionMatrix
+from app.ml.model_registry import get_registry
 from app.repositories.recommendation_repository import RecommendationRepository
 from app.services.content_based_service import RecommendationResult
 
@@ -26,23 +27,34 @@ class CollaborativeService:
         top_n: int = 10,
         category: str | None = None,
     ) -> list[RecommendationResult]:
-        all_users = self.repo.get_all_active_users()
-        all_items = self.repo.get_all_active_items()
-        all_events = self.repo.get_all_events()
+        registry = get_registry()
 
-        if not all_users or not all_items or not all_events:
-            return []
+        if registry.collaborative is not None:
+            interaction_matrix = registry.collaborative.interaction_matrix
+            knn = registry.collaborative.knn_filter
+            all_items = self.repo.get_all_active_items()
+            if not all_items:
+                return []
+            items_by_id = {i.id: i for i in all_items}
+        else:
+            all_users = self.repo.get_all_active_users()
+            all_items = self.repo.get_all_active_items()
+            all_events = self.repo.get_all_events()
 
-        user_ids = [u.id for u in all_users]
-        item_ids = [i.id for i in all_items]
-        items_by_id = {i.id: i for i in all_items}
+            if not all_users or not all_items or not all_events:
+                return []
 
-        matrix = InteractionMatrix(
-            events=all_events,
-            user_ids=user_ids,
-            item_ids=item_ids,
-        )
-        knn = KNNCollaborativeFilter(matrix=matrix, n_neighbors=self.n_neighbors)
+            user_ids = [u.id for u in all_users]
+            item_ids = [i.id for i in all_items]
+            items_by_id = {i.id: i for i in all_items}
+
+            interaction_matrix = InteractionMatrix(
+                events=all_events,
+                user_ids=user_ids,
+                item_ids=item_ids,
+            )
+            knn = KNNCollaborativeFilter(matrix=interaction_matrix, n_neighbors=self.n_neighbors)
+
         cf_results = knn.recommend(user_id=user_id, top_n=top_n * 2)
 
         results: list[RecommendationResult] = []
