@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import (
     collaborative_recommendations,
     health,
+    hybrid_recommendations,
     items,
     recommendations,
     user_events,
@@ -21,4 +22,9 @@ router.include_router(
     collaborative_recommendations.router,
     prefix="/recommendations/collaborative",
     tags=["recommendations-collaborative"],
+)
+router.include_router(
+    hybrid_recommendations.router,
+    prefix="/recommendations/hybrid",
+    tags=["recommendations-hybrid"],
 )
