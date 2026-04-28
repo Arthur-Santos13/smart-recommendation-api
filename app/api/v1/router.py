@@ -5,6 +5,7 @@ from app.api.v1.endpoints import (
     health,
     hybrid_recommendations,
     items,
+    metrics,
     recommendations,
     user_events,
     users,
@@ -28,3 +29,4 @@ router.include_router(
     prefix="/recommendations/hybrid",
     tags=["recommendations-hybrid"],
 )
+router.include_router(metrics.router, prefix="/metrics", tags=["metrics"])
