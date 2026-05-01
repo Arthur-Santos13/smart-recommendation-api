@@ -1,0 +1,48 @@
+services:
+
+  # ── PostgreSQL database ───────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: smart_recommendation
+    ports:
+      # Host port 5435 avoids conflicts with any PostgreSQL instances already
+      # running locally on 5432, 5433 or 5434.
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d smart_recommendation"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── FastAPI application ───────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Override DATABASE_URL so the API reaches the 'db' service by name,
+      # not localhost (which would point to the API container itself).
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/smart_recommendation
+    volumes:
+      # Persists trained model artifacts across container restarts.
+      - model_artifacts:/app/models
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  model_artifacts:
