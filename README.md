@@ -11,17 +11,21 @@ A recommendation system API built with **FastAPI** and **scikit-learn**, combini
 3. [Architecture](#architecture)
 4. [Project Structure](#project-structure)
 5. [Getting Started](#getting-started)
-6. [Recommendation Algorithms](#recommendation-algorithms)
+   - [Running with Docker](#running-with-docker)
+6. [Environment Variables](#environment-variables)
+7. [CORS Configuration](#cors-configuration)
+8. [Recommendation Algorithms](#recommendation-algorithms)
    - [Content-Based Filtering — How TF-IDF Works](#content-based-filtering--how-tf-idf-works)
    - [Collaborative Filtering — KNN](#collaborative-filtering--knn)
    - [Hybrid System — Weighted Blending](#hybrid-system--weighted-blending)
    - [Category Filter](#category-filter)
    - [Explainability](#explainability)
-7. [Model Persistence](#model-persistence)
-8. [Background Jobs](#background-jobs)
-9. [Metrics](#metrics)
-10. [API Reference](#api-reference)
-11. [Seed Data](#seed-data)
+9. [Model Persistence](#model-persistence)
+10. [Background Jobs](#background-jobs)
+11. [Metrics](#metrics)
+12. [API Reference](#api-reference)
+13. [Seed Data](#seed-data)
+14. [Roadmap](#roadmap)
 
 ---
 
@@ -46,6 +50,7 @@ A recommendation system API built with **FastAPI** and **scikit-learn**, combini
 | ML | scikit-learn 1.8, NumPy, SciPy, joblib |
 | Config | pydantic-settings + python-dotenv |
 | Scheduling | APScheduler 3.11 |
+| Containerisation | Docker + Docker Compose |
 
 ---
 
@@ -178,6 +183,94 @@ uvicorn app.main:app --reload
 ```
 
 Interactive docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+---
+
+### Running with Docker
+
+#### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+
+#### Steps
+
+**1. Copy the environment file:**
+
+```bash
+cp .env.example .env
+```
+
+> `DATABASE_URL` is overridden in `docker-compose.yml` at runtime to point at the internal `db` service hostname. The value in `.env` is only used for local (non-Docker) runs.
+
+**2. Build and start both services:**
+
+```bash
+docker compose up --build
+```
+
+**3. On the first run, initialise the database, seed data and train models:**
+
+```bash
+docker compose exec api alembic upgrade head
+docker compose exec api python -m scripts.seed
+docker compose exec api python -m scripts.train
+```
+
+The API will be available at [http://localhost:8000](http://localhost:8000).  
+PostgreSQL is mapped to host port **5435** (avoids conflicts with existing local PostgreSQL instances on 5432–5434 and 5436).
+
+#### Useful commands
+
+| Command | Description |
+|---|---|
+| `docker compose up -d` | Start services in the background |
+| `docker compose down` | Stop and remove containers |
+| `docker compose down -v` | Stop containers and **delete volumes** ⚠ destroys all data |
+| `docker compose logs -f api` | Stream API logs |
+| `docker compose exec api python -m scripts.train` | Retrain models inside the container |
+
+---
+
+## Environment Variables
+
+All settings are loaded from `.env` via `pydantic-settings`. Copy `.env.example` and adjust the values for your environment.
+
+| Variable | Default | Description |
+|---|---|---|
+| `APP_NAME` | `smart-recommendation-api` | Application name shown in OpenAPI docs and logs |
+| `APP_ENV` | `development` | Runtime environment — `development` or `production` |
+| `DEBUG` | `true` | FastAPI debug mode — set to `false` in production |
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/smart_recommendation` | PostgreSQL connection string. **Overridden automatically by Docker Compose** to use the `db` service hostname |
+| `SECRET_KEY` | `change-me-in-production` | Secret for cryptographic operations — **must be changed before deploying** |
+| `MODEL_DIR` | `models` | Directory for trained joblib model artifacts |
+| `RETRAIN_INTERVAL_HOURS` | `6` | Hours between automatic background retraining runs. Set to `0` to disable |
+| `ALLOWED_ORIGINS` | `http://localhost:4200,http://localhost:3000` | Comma-separated list of origins allowed by CORS middleware |
+
+---
+
+## CORS Configuration
+
+The API ships with `CORSMiddleware` configured via the `ALLOWED_ORIGINS` environment variable. This is the integration point for the Angular frontend ([`smart-recommendation-api-frontend`](https://github.com/Arthur-Santos13/smart-recommendation-frontend)).
+
+**Local development — Angular default port (`ng serve`):**
+
+```env
+ALLOWED_ORIGINS=http://localhost:4200
+```
+
+**Multiple origins (comma-separated, no spaces around commas):**
+
+```env
+ALLOWED_ORIGINS=http://localhost:4200,https://myfrontend.com
+```
+
+**Production:**
+
+```env
+ALLOWED_ORIGINS=https://myfrontend.com
+```
+
+The middleware is configured with `allow_credentials=True`, `allow_methods=["*"]`, and `allow_headers=["*"]`. The origin list is the only enforced boundary.
 
 ---
 
@@ -453,3 +546,23 @@ The seed script (`python -m scripts.seed`) generates deterministic, reproducible
 | general | 3 |
 
 **Events** are generated probabilistically per persona × category pair (e.g. `tech_enthusiast × technology` has `p_view=0.95`, `p_click=0.80`, `p_complete=0.70`). The seed is fixed at `42` for reproducibility.
+
+---
+
+## Roadmap
+
+| # | Phase | Branch | Status |
+|---|-------|--------|--------|
+| 1 | Initial Setup — FastAPI skeleton, project structure | `feature/initial-setup` | ✅ |
+| 2 | Database Setup — SQLAlchemy models, Alembic migrations | `feature/database-setup` | ✅ |
+| 3 | CRUD — users, items, user events endpoints | `feature/crud` | ✅ |
+| 4 | Seed Data — deterministic seeder and sample fixtures | `feature/seed-data` | ✅ |
+| 5 | Content-Based Recommender — TF-IDF + cosine similarity | `feature/content-based-recommender` | ✅ |
+| 6 | Collaborative Filtering — KNN on interaction matrix | `feature/collaborative-filtering` | ✅ |
+| 7 | Hybrid Recommender — weighted blend of both strategies | `feature/hybrid-recommender` | ✅ |
+| 8 | Model Persistence — joblib artifacts + startup registry | `feature/model-persistence` | ✅ |
+| 9 | Recommendation Metrics — usage rate, precision@k, top items | `feature/recommendation-metrics` | ✅ |
+| 10 | Background Jobs — APScheduler periodic retraining | `feature/background-jobs` | ✅ |
+| 11 | Architecture Documentation — algorithms and explainability | `docs/architecture-and-recommendation-system` | ✅ |
+| 12 | Docker — multi-stage build, Docker Compose, CORS middleware | `feature/docker` | ✅ |
+| 13 | Final Documentation — Docker usage, env vars, CORS guide, roadmap | `docs/final-documentation` | ✅ |
