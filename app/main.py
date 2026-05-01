@@ -4,13 +4,16 @@ from fastapi import FastAPI
 
 from app.api.v1.router import router as v1_router
 from app.core.config import settings
+from app.core.scheduler import start_scheduler, stop_scheduler
 from app.ml.model_registry import load_into_registry
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     load_into_registry(settings.MODEL_DIR)
+    start_scheduler()
     yield
+    stop_scheduler()
 
 
 app = FastAPI(
