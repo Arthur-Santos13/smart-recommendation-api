@@ -12,6 +12,10 @@ class Settings(BaseSettings):
 
     MODEL_DIR: str = "models"
 
+    # Background jobs
+    # Set to 0 to disable automatic retraining (manual trigger still available)
+    RETRAIN_INTERVAL_HOURS: int = 6
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

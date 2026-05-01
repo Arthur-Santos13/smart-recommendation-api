@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
+    admin,
     collaborative_recommendations,
     health,
     hybrid_recommendations,
@@ -30,3 +31,4 @@ router.include_router(
     tags=["recommendations-hybrid"],
 )
 router.include_router(metrics.router, prefix="/metrics", tags=["metrics"])
+router.include_router(admin.router, prefix="/admin", tags=["admin"])
