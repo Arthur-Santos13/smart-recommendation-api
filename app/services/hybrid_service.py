@@ -17,7 +17,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.ml.hybrid_merger import merge_recommendations
+from app.ml.hybrid_merger import merge_recommendations, _normalise
 from app.services.collaborative_service import CollaborativeService
 from app.services.content_based_service import ContentBasedService, RecommendationResult
 
@@ -53,15 +53,17 @@ class HybridService:
 
         # Cold-start: no collaborative signal → pure content-based
         if not cf_results:
-            for r in cb_results:
+            normalised = _normalise(cb_results)
+            for r in normalised:
                 r.reason = f"{r.reason} (content)"
-            return cb_results[:top_n]
+            return normalised[:top_n]
 
         # Cold-start: no content signal → pure collaborative
         if not cb_results:
-            for r in cf_results:
+            normalised = _normalise(cf_results)
+            for r in normalised:
                 r.reason = f"{r.reason} (collaborative)"
-            return cf_results[:top_n]
+            return normalised[:top_n]
 
         return merge_recommendations(
             cb_results=cb_results,
