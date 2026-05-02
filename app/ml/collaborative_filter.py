@@ -68,9 +68,10 @@ class KNNCollaborativeFilter:
         distances = distances.flatten()
         indices = indices.flatten()
 
-        already_seen = self.matrix.get_interacted_item_ids(user_id)
-
-        # Accumulate weighted item scores from neighbours
+        # Accumulate weighted item scores from neighbours.
+        # Unlike the content-based pipeline, the CF intentionally keeps items
+        # the user has already seen: if many similar users also interacted with
+        # the same item it is a strong collaborative signal worth surfacing.
         item_scores: dict[int, float] = {}
         item_contributors: dict[int, list[uuid.UUID]] = {}
 
@@ -89,9 +90,6 @@ class KNNCollaborativeFilter:
 
             for item_col, weight in enumerate(neighbour_vec):
                 if weight == 0.0:
-                    continue
-                item_id = self.matrix.item_ids[item_col]
-                if item_id in already_seen:
                     continue
 
                 contribution = similarity * float(weight)
