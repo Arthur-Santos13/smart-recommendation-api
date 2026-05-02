@@ -33,7 +33,7 @@ def _normalise(results: list[RecommendationResult]) -> list[RecommendationResult
     if max_s == min_s:
         return [
             RecommendationResult(
-                item_id=r.item_id, score=1.0, reason=r.reason, category=r.category
+                item_id=r.item_id, score=1.0, reason=r.reason, category=r.category, title=r.title
             )
             for r in results
         ]
@@ -43,6 +43,7 @@ def _normalise(results: list[RecommendationResult]) -> list[RecommendationResult
             score=round((r.score - min_s) / (max_s - min_s), 4),
             reason=r.reason,
             category=r.category,
+            title=r.title,
         )
         for r in results
     ]
@@ -112,8 +113,14 @@ def merge_recommendations(
                 score=final_score,
                 reason=reason,
                 category=category_val,
+                title=(cb or cf).title,  # type: ignore[union-attr]
             )
         )
 
     merged.sort(key=lambda r: r.score, reverse=True)
-    return merged[:top_n]
+    top = merged[:top_n]
+    # Re-normalise the final merged list so the best item is always 1.0.
+    # Without this, a CB-only item is capped at cb_weight (e.g. 0.70) and a
+    # CF-only item at cf_weight (e.g. 0.30), making scores artifacts of the
+    # blending weights rather than a meaningful match percentage.
+    return _normalise(top)
