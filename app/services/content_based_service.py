@@ -35,6 +35,7 @@ class RecommendationResult:
     score: float
     reason: str
     category: str
+    title: str = ""
 
 
 def _build_seed_weights(events) -> dict[uuid.UUID, float]:
@@ -127,6 +128,7 @@ class ContentBasedService:
                     score=round(data["score"], 4),
                     reason=reason,
                     category=item.category,
+                    title=item.title,
                 )
             )
 

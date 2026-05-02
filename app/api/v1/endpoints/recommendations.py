@@ -39,6 +39,7 @@ def get_recommendations(
         recommendations=[
             RecommendationItem(
                 item_id=r.item_id,
+                title=r.title,
                 score=r.score,
                 reason=r.reason,
                 category=r.category,

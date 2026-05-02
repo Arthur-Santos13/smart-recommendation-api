@@ -73,6 +73,7 @@ class CollaborativeService:
                     score=cf.score,
                     reason=reason,
                     category=item.category,
+                    title=item.title,
                 )
             )
 
